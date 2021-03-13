@@ -1,13 +1,15 @@
 {
     "configurations": [
-    {
-        "name": "Attach",
-        "port": 3000,
-        "request": "attach",
-        "skipFiles": [
-            "<node_internals>/**"
-        ],
-        "type": "pwa-node"
-    }
+        {
+            "name": "Attach",
+            "port": 9229,
+            "request": "attach",
+            "preLaunchTask": "Serve Backend",
+            "postDebugTask": "Terminate Backend",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "pwa-node"
+        }
     ]
 }

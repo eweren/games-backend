@@ -54,7 +54,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           users: Array.from(roomInfo.users),
         });
       }
-    }, 1000);
+    }, 100);
 
     console.log(`${clientId} joined ${roomId}`);
 
