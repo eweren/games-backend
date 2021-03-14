@@ -1,4 +1,4 @@
-import { ReadonlyAffineTransform } from './AffineTransform';
+import { ReadonlyAffineTransform } from "./AffineTransform";
 
 /**
  * Minimal interface of a 2D vector.

@@ -1,4 +1,4 @@
-import { Inject } from '@nestjs/common';
+import { Inject } from "@nestjs/common";
 import {
   ConnectedSocket,
   MessageBody,
@@ -8,10 +8,10 @@ import {
   WebSocketGateway,
   WebSocketServer,
   WsResponse,
-} from '@nestjs/websockets';
+} from "@nestjs/websockets";
 
-import { Server, Socket } from 'socket.io';
-import { SocketsService } from './sockets/sockets.service';
+import { Server, Socket } from "socket.io";
+import { SocketsService } from "./sockets/sockets.service";
 
 /**
  * @description The websocket gateway for user-activities.
@@ -22,7 +22,7 @@ import { SocketsService } from './sockets/sockets.service';
 @WebSocketGateway()
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
-    @Inject('SocketsService') private socketsService: SocketsService,
+    @Inject("SocketsService") private socketsService: SocketsService,
   ) {}
 
   /** The socketio server used to emit the sockets. */
@@ -49,14 +49,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     setTimeout(() => {
       const roomInfo = this.socketsService.openRooms.get(roomId);
       if (roomInfo) {
-        this.server.to(roomId).emit('roomInfo', {
+        this.server.to(roomId).emit("roomInfo", {
           host: roomInfo.host,
           users: Array.from(roomInfo.users),
         });
       }
     }, 100);
-
-    console.log(`${clientId} joined ${roomId}`);
 
     this.socketsService.addConnectedClient(username, clientId, roomId, client);
   }
@@ -81,14 +79,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const roomInfo = this.socketsService.openRooms.get(roomId);
     if (roomInfo) {
-      this.server.to(roomId).emit('roomInfo', {
+      this.server.to(roomId).emit("roomInfo", {
         host: roomInfo.host,
         users: Array.from(roomInfo.users),
       });
     }
   }
 
-  @SubscribeMessage('playerUpdate')
+  @SubscribeMessage("playerUpdate")
   handleEvent(
     @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
@@ -101,17 +99,17 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       this.server
         .to(roomId)
-        .emit('playerUpdate', { username: user[0], ...data });
+        .emit("playerUpdate", { username: user[0], ...data });
     } catch (e) {
-      console.log('AHA, hier also');
+      console.log("AHA, hier also");
     }
 
-    const event = 'events';
+    const event = "events";
 
     return { event, data };
   }
 
-  @SubscribeMessage('startGame')
+  @SubscribeMessage("startGame")
   joinEvent(
     @MessageBody() data: string,
     @ConnectedSocket() client: Socket,
@@ -122,12 +120,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
     const roomId = user[1].roomId;
 
-    const event = 'events';
+    const event = "events";
 
     try {
-      this.server.to(roomId).emit('startGame', user);
+      this.server.to(roomId).emit("startGame", user);
     } catch (e) {
-      console.log('AHA, hier also');
+      console.log("AHA, hier also");
     }
 
     return { event, data };

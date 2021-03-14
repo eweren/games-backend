@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { Socket } from 'socket.io';
+import { Injectable } from "@nestjs/common";
+import { Socket } from "socket.io";
 
 interface RoomInfo {
   host: string;
@@ -29,11 +29,11 @@ export class SocketsService {
     };
     currentRoom.users.add(user);
     console.log(
-      'Room ',
+      "Room ",
       roomId,
-      ' has ',
+      " has ",
       currentRoom.users.size,
-      ' active users',
+      " active users",
     );
     this.openRooms.set(roomId, currentRoom);
   }
@@ -57,11 +57,11 @@ export class SocketsService {
       }
     }
     console.log(
-      'Room ',
+      "Room ",
       user[1].roomId,
-      ' has ',
+      " has ",
       currentRoom.users.size,
-      ' active users',
+      " active users",
     );
     return true;
   }

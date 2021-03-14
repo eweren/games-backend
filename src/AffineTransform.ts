@@ -151,7 +151,7 @@ export class AffineTransform implements ReadonlyAffineTransform {
    */
   public static fromDOMMatrix(domMatrix: DOMMatrix): AffineTransform {
     if (!domMatrix.is2D) {
-      throw new Error('Can only create Matrix3 from 2D DOMMatrix');
+      throw new Error("Can only create Matrix3 from 2D DOMMatrix");
     }
     return new AffineTransform(
       domMatrix.a,
