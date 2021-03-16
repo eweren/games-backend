@@ -1,97 +1,94 @@
 import { Injectable } from "@nestjs/common";
 import { Socket } from "socket.io";
 
-interface RoomInfo {
-  host: string;
-  users: Set<string>;
-}
+type RoomInfo = { host: string; users: Map<string, UserData>; };
+type UserEntry = [string, UserData];
+type UserData = { clientId: string; socket: Socket; };
 
 @Injectable()
 export class SocketsService {
-  public connectedUsers = new Map<
-    string,
-    { clientId: string; roomId: string; socket: Socket }
-  >();
-  public openRooms = new Map<string, RoomInfo>();
+    public openRooms = new Map<string, RoomInfo>();
 
-  public addConnectedClient(
-    user: string,
-    clientId: string,
-    roomId: string,
-    socket: Socket,
-  ): void {
-    const oldSocket = this.connectedUsers.get(user)?.socket;
-    oldSocket?.disconnect();
-    this.connectedUsers.set(user, { clientId, roomId, socket });
-    const currentRoom = this.openRooms.get(roomId) ?? {
-      host: user,
-      users: new Set(),
-    };
-    currentRoom.users.add(user);
-    console.log(
-      "Room ",
-      roomId,
-      " has ",
-      currentRoom.users.size,
-      " active users",
-    );
-    this.openRooms.set(roomId, currentRoom);
-  }
+    /**
+     * Disconnects an old existing socket for the user with this username and room and adds the new information to the
+     * correct room.
+     *
+     * @param username - the username of the new user
+     * @param clientId - the socket.io client-id to identify the requester
+     * @param roomId   - the room the user is related to.
+     * @param socket   - the socket of the user.
+     */
+    public addConnectedClient(
+        username: string,
+        clientId: string,
+        roomId: string,
+        socket: Socket,
+    ): void {
+        // Disconnect from old socket if present.
+        const oldSocket = this.openRooms.get(roomId)?.users.get(username)?.socket;
+        oldSocket?.disconnect();
 
-  public removeConnectedClient(clientId: string): boolean {
-    const user = this.getUserByClientId(clientId);
-    if (!user) {
-      return false;
+        // Update the room entry for the given id.
+        const currentRoom = this.openRooms.get(roomId) ?? {
+            host: username,
+            users: new Map(),
+        };
+        currentRoom.users.set(username, { clientId, socket });
+        console.log("Room ", roomId, " has ", currentRoom.users.size, " active users");
+        this.openRooms.set(roomId, currentRoom);
     }
-    this.connectedUsers.delete(user[0]);
-    const currentRoom = this.openRooms.get(user[1].roomId);
-    if (currentRoom) {
-      currentRoom.users.delete(user[0]);
-      if (currentRoom.users.size > 0) {
-        if (currentRoom.host === user[0]) {
-          currentRoom.host = currentRoom.users[0];
+
+    /**
+     * Removes the connection of this client.
+     *
+     * @param clientId - The id of the socket.io client that disconnected.
+     * @returns true if one connection was removed and false if none was found for this clientId.
+     */
+    public removeConnectedClient(clientId: string): boolean {
+        const user = this.getUserByClientId(clientId);
+        if (!user) {
+            return false;
         }
-        this.openRooms.set(user[1].roomId, currentRoom);
-      } else {
-        this.openRooms.delete(user[1].roomId);
-      }
+        const currentRoom = Array.from(this.openRooms.entries()).find(roomInfo => Array.from(roomInfo[1].users.values()).find(user => user.clientId === clientId));
+        if (currentRoom) {
+            currentRoom[1].users.delete(user[0]);
+            if (currentRoom[1].users.size > 0) {
+                if (currentRoom[1].host === user[0]) {
+                    currentRoom[1].host = currentRoom[1].users[0];
+                }
+                this.openRooms.set(currentRoom[0], currentRoom[1]);
+            } else {
+                this.openRooms.delete(currentRoom[0]);
+            }
+        }
+        console.log( "Room ", currentRoom[0], " has ", currentRoom[1].users.size, " active users", );
+        return true;
     }
-    console.log(
-      "Room ",
-      user[1].roomId,
-      " has ",
-      currentRoom.users.size,
-      " active users",
-    );
-    return true;
-  }
 
-  public getSocketsForRoom(roomId: string): Array<Socket> {
-    const room = this.openRooms.get(roomId);
-    if (!room) {
-      return [];
-    } else {
-      return Array.from(room.users.values()).map(
-        (userId) => this.connectedUsers.get(userId).socket,
-      );
+    public getUserByClientId(clientId: string): UserEntry | undefined {
+        let userEntry: UserEntry;
+        Array.from(this.openRooms.values()).forEach(roomInfo => Array.from(roomInfo.users.entries())
+            .forEach(user => {
+                if (user[1].clientId === clientId) {
+                    userEntry = user;
+                    return;
+                }
+            })
+        );
+        return userEntry;
     }
-  }
 
-  public getUserByClientId(
-    clientId: string,
-  ):
-    | [
-        string,
-        {
-          clientId: string;
-          roomId: string;
-          socket: Socket;
-        },
-      ]
-    | undefined {
-    const user = Array.from(this.connectedUsers.entries()).find(
-      (entry) => entry[1].clientId === clientId,
-    );
-    return user;
-  }
+    public getRoomOfUserByClientId(clientId: string): [string, RoomInfo] {
+        return Array.from(this.openRooms.entries()).find(roomInfo => Array.from(roomInfo[1].users.values())
+            .find(user => user.clientId === clientId));
+    }
+
+    public getUsersOfRoom(roomId: string): Array<string> {
+        const possibleRoom = Array.from(this.openRooms.entries())
+            .find(roomInfo => roomInfo[0] === roomId);
+        if (!possibleRoom) {
+            return [];
+        }
+        return Array.from(possibleRoom[1].users).map(user => user[0]);
+    }
 }

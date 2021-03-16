@@ -1,12 +1,15 @@
-import { Controller, Get } from "@nestjs/common";
-import { AppService } from "./app.service";
+import { Controller, Get, Param } from "@nestjs/common";
+import { SocketsService } from "./sockets/sockets.service";
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+    constructor(private readonly socketsService: SocketsService) {}
 
-  @Get()
-  getHello(): string {
-    return this.appService.getHello();
-  }
+    @Get(":roomId")
+    getUsers(@Param("roomId") room: string): any {
+        if (room) {
+            return this.socketsService.getUsersOfRoom(room);
+        }
+        return [];
+    }
 }
