@@ -51,10 +51,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             if (roomInfo) {
                 this.server.to(roomId).emit("roomInfo", {
                     host: roomInfo.host,
+                    playerJoined: true,
                     users: Array.from(roomInfo.users).map(u => u[0]),
                 });
             }
-        }, 100);
+            const otherPlayersOfRoom = Array.from(roomInfo.users.keys()).map(u => this.socketsService.getStateOfUser(u));
+            client.emit("playersUpdate", otherPlayersOfRoom);
+        }, 1000);
 
         this.socketsService.addConnectedClient(username, clientId, roomId, client);
     }
@@ -75,17 +78,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return;
         }
 
+        this.socketsService.removeConnectedClient(clientId);
         const roomInfo = this.socketsService.openRooms.get(roomId);
         if (roomInfo) {
             this.server.to(roomId).emit("roomInfo", {
                 host: roomInfo.host,
+                playerLeft: true,
                 users: Array.from(roomInfo.users).map(u => u[0]),
             });
         }
-        this.socketsService.removeConnectedClient(clientId);
     }
 
-    @SubscribeMessage("playerUpdate")
+    @SubscribeMessage("characterUpdate")
     handleEvent(
         @MessageBody() data: any,
         @ConnectedSocket() client: Socket,
@@ -95,12 +99,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         if (!user) {
             return;
         }
+        if (!this.socketsService.getStateOfUser(user[0])) {
+            this.server.to(roomId).emit("characterJoined", data);
+        }
+        this.socketsService.updateStateOfUser(user[0], data);
         try {
             this.server
                 .to(roomId)
-                .emit("playerUpdate", { username: user[0], ...data });
+                .emit("characterUpdate", { username: user[0], ...data });
         } catch (e) {
-            console.log("AHA, hier also");
+            console.log("AHA, hier also1");
         }
 
         const event = "events";
@@ -108,7 +116,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return { event, data };
     }
 
-    @SubscribeMessage("startGame")
+    @SubscribeMessage("gameState")
     joinEvent(
         @MessageBody() data: string,
         @ConnectedSocket() client: Socket,
@@ -122,9 +130,31 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         const event = "events";
 
         try {
-            this.server.to(roomId).emit("startGame", user);
+            this.server.to(roomId).emit("gameState", data);
         } catch (e) {
-            console.log("AHA, hier also");
+            console.log("AHA, hier also2");
+        }
+
+        return { event, data };
+    }
+
+    @SubscribeMessage("characterEvent")
+    characterEvent(
+        @MessageBody() data: any,
+        @ConnectedSocket() client: Socket,
+    ): WsResponse<unknown> {
+        const user = this.socketsService.getUserByClientId(client.id);
+        const roomId = this.socketsService.getRoomOfUserByClientId(client.id)[0];
+        if (!user) {
+            return;
+        }
+
+        const event = "events";
+
+        try {
+            this.server.to(roomId).emit("characterEvent", data);
+        } catch (e) {
+            console.log("AHA, hier also3: ", JSON.stringify(data));
         }
 
         return { event, data };

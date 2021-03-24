@@ -8,6 +8,7 @@ type UserData = { clientId: string; socket: Socket; };
 @Injectable()
 export class SocketsService {
     public openRooms = new Map<string, RoomInfo>();
+    private characterStates = new Map<string, any>();
 
     /**
      * Disconnects an old existing socket for the user with this username and room and adds the new information to the
@@ -49,6 +50,7 @@ export class SocketsService {
         if (!user) {
             return false;
         }
+        this.characterStates.delete(user[0]);
         const currentRoom = Array.from(this.openRooms.entries()).find(roomInfo => Array.from(roomInfo[1].users.values()).find(user => user.clientId === clientId));
         if (currentRoom) {
             currentRoom[1].users.delete(user[0]);
@@ -90,5 +92,14 @@ export class SocketsService {
             return [];
         }
         return Array.from(possibleRoom[1].users).map(user => user[0]);
+    }
+
+    public updateStateOfUser(id: string, newState: any): void {
+        const oldState = this.characterStates.get(id) ?? {};
+        this.characterStates.set(id, { ...oldState, ...newState });
+    }
+
+    public getStateOfUser(id: string): any {
+        return this.characterStates.get(id);
     }
 }
