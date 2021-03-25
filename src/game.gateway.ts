@@ -53,6 +53,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
                     host: roomInfo.host,
                     playerJoined: true,
                     users: Array.from(roomInfo.users).map(u => u[0]),
+                    gameTime: roomInfo.gameTime
                 });
             }
             const otherPlayersOfRoom = Array.from(roomInfo.users.keys()).map(u => this.socketsService.getStateOfUser(u));
@@ -85,12 +86,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 host: roomInfo.host,
                 playerLeft: true,
                 users: Array.from(roomInfo.users).map(u => u[0]),
+                gameTime: roomInfo.gameTime
             });
         }
     }
 
     @SubscribeMessage("characterUpdate")
-    handleEvent(
+    public handleEvent(
         @MessageBody() data: any,
         @ConnectedSocket() client: Socket,
     ): WsResponse<unknown> {
@@ -117,7 +119,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     @SubscribeMessage("gameState")
-    joinEvent(
+    public joinEvent(
         @MessageBody() data: string,
         @ConnectedSocket() client: Socket,
     ): WsResponse<unknown> {
@@ -139,7 +141,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     @SubscribeMessage("characterEvent")
-    characterEvent(
+    public characterEvent(
         @MessageBody() data: any,
         @ConnectedSocket() client: Socket,
     ): WsResponse<unknown> {
@@ -155,6 +157,30 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             this.server.to(roomId).emit("characterEvent", data);
         } catch (e) {
             console.log("AHA, hier also3: ", JSON.stringify(data));
+        }
+
+        return { event, data };
+    }
+
+    @SubscribeMessage("gameTime")
+    public gameTime(
+        @MessageBody() data: number,
+        @ConnectedSocket() client: Socket,
+    ): WsResponse<unknown> {
+        const user = this.socketsService.getUserByClientId(client.id);
+        const roomId = this.socketsService.getRoomOfUserByClientId(client.id)[0];
+        if (!user) {
+            return;
+        }
+
+        const event = "events";
+        const roomInfo = this.socketsService.openRooms.get(roomId);
+        roomInfo.gameTime = data;
+
+        try {
+            this.server.to(roomId).emit("gameTime", data);
+        } catch (e) {
+            console.log("AHA, hier also4: ", JSON.stringify(data));
         }
 
         return { event, data };

@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { Socket } from "socket.io";
 
-type RoomInfo = { host: string; users: Map<string, UserData>; };
+type RoomInfo = { host: string; users: Map<string, UserData>; gameTime?: number };
 type UserEntry = [string, UserData];
 type UserData = { clientId: string; socket: Socket; };
 
