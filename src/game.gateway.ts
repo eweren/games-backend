@@ -9,6 +9,7 @@ import {
   WebSocketServer,
   WsResponse,
 } from "@nestjs/websockets";
+import os from "os";
 
 import { Server, Socket } from "socket.io";
 import { SocketsService } from "./sockets/sockets.service";
@@ -52,6 +53,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 this.server.to(roomId).emit("roomInfo", {
                     host: roomInfo.host,
                     playerJoined: true,
+                    newUser: username,
                     users: Array.from(roomInfo.users).map(u => u[0]),
                     gameTime: roomInfo.gameTime
                 });
@@ -89,6 +91,29 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 gameTime: roomInfo.gameTime
             });
         }
+    }
+
+    @SubscribeMessage("message")
+    public handleMessage(
+        @MessageBody() message: any,
+        @ConnectedSocket() client: Socket) {
+        const roomId = this.socketsService.getRoomOfUserByClientId(client.id)[0];
+        const user = this.socketsService.getUserByClientId(client.id);
+        this.server.to(roomId).emit("message", message, roomId);
+    }
+
+    @SubscribeMessage("ipaddr")
+    public handleIpAddress(@ConnectedSocket() socket: Socket) {
+        socket.on("ipaddr", function() {
+            const ifaces = os.networkInterfaces();
+            for (const dev in ifaces) {
+            ifaces[dev].forEach(function(details) {
+                if (details.family === "IPv4" && details.address !== "127.0.0.1") {
+                socket.emit("ipaddr", details.address);
+                }
+            });
+            }
+        });
     }
 
     @SubscribeMessage("characterUpdate")
