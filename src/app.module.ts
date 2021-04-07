@@ -1,13 +1,19 @@
 import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+
 import { AppController } from "./app.controller";
 import { GameGateway } from "./game.gateway";
 import { SocketsService } from "./sockets/sockets.service";
 import * as env from "dotenv";
 
-console.log(env.config());
+env.config();
 
 @Module({
-    imports: [],
+    imports: [
+        ConfigModule.forRoot({
+            envFilePath: ".env",
+        })
+    ],
     controllers: [AppController],
     providers: [GameGateway, SocketsService],
 })
