@@ -4,7 +4,7 @@ import { GameGateway } from "./game.gateway";
 import { SocketsService } from "./sockets/sockets.service";
 import * as env from "dotenv";
 
-env.config();
+console.log(env.config());
 
 @Module({
     imports: [],
