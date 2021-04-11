@@ -12,7 +12,7 @@ import {
 import os from "os";
 
 import { Server, Socket } from "socket.io";
-import { SocketsService } from "./sockets/sockets.service";
+import { RoomInfo, SocketsService } from "./sockets/sockets.service";
 
 /**
  * @description The websocket gateway for user-activities.
@@ -135,7 +135,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 .to(roomId)
                 .emit("characterUpdate", { username: user[0], ...data });
         } catch (e) {
-            console.log("AHA, hier also1");
+            console.log("LogPoint1");
         }
 
         const event = "events";
@@ -159,7 +159,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         try {
             this.server.to(roomId).emit("gameState", data);
         } catch (e) {
-            console.log("AHA, hier also2");
+            console.log("LogPoint2");
         }
 
         return { event, data };
@@ -181,7 +181,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         try {
             this.server.to(roomId).emit("characterEvent", data);
         } catch (e) {
-            console.log("AHA, hier also3: ", JSON.stringify(data));
+            console.log("LogPoint3: ", JSON.stringify(data));
         }
 
         return { event, data };
@@ -205,7 +205,54 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         try {
             this.server.to(roomId).emit("gameTime", data);
         } catch (e) {
-            console.log("AHA, hier also4: ", JSON.stringify(data));
+            console.log("LogPoint4: ", JSON.stringify(data));
+        }
+
+        return { event, data };
+    }
+
+    @SubscribeMessage("roomInfo")
+    public roomInfo(
+        @MessageBody() data: RoomInfo,
+        @ConnectedSocket() client: Socket,
+    ): WsResponse<unknown> {
+        const user = this.socketsService.getUserByClientId(client.id);
+        const roomId = this.socketsService.getRoomOfUserByClientId(client.id)[0];
+        if (!user) {
+            return;
+        }
+
+        const event = "events";
+        let roomInfo = this.socketsService.openRooms.get(roomId);
+        roomInfo = {...roomInfo, ...data};
+        this.socketsService.openRooms.set(roomId, roomInfo);
+
+        try {
+            this.server.to(roomId).emit("roomInfo", roomInfo);
+        } catch (e) {
+            console.log("LogPoint4: ", JSON.stringify(data));
+        }
+
+        return { event, data };
+    }
+
+    @SubscribeMessage("dropCard")
+    public dropCard(
+        @MessageBody() data: string,
+        @ConnectedSocket() client: Socket,
+    ): WsResponse<unknown> {
+        const user = this.socketsService.getUserByClientId(client.id);
+        const roomId = this.socketsService.getRoomOfUserByClientId(client.id)[0];
+        if (!user) {
+            return;
+        }
+
+        const event = "events";
+
+        try {
+            this.server.to(roomId).emit("dropCard", data);
+        } catch (e) {
+            console.log("LogPoint4: ", JSON.stringify(data));
         }
 
         return { event, data };
