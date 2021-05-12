@@ -12,4 +12,9 @@ export class AppController {
         }
         return [];
     }
+
+    @Get()
+    nothing(): any {
+        return "nothing";
+    }
 }
