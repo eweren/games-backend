@@ -30,8 +30,7 @@
     "config": "^3.3.6",
     "dotenv": "^8.2.0",
     "reflect-metadata": "^0.1.13",
-    "rimraf": "^3.0.2",
-    "rxjs": "^6.6.6"
+    "rimraf": "^3.0.2"
   },
   "devDependencies": {
     "@nestjs/cli": "^7.5.6",
