@@ -25,7 +25,7 @@ jobs:
         uses: cross-the-world/ssh-pipeline@v1.2.0
         with:
           # ssh remote host
-          host: ewer.rest
+          host: socket.ewer.rest
           # ssh remote user
           user: root
           # ssh remote password
